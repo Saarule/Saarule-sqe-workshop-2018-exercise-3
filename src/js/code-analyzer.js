@@ -66,10 +66,10 @@ function parseLiteral(jsonObject) {
     return jsonObject.value;
 }
 function parseIdentifier(jsonObject) {
-    return jsonObject.value;
+    return jsonObject.name;
 }
 function parseAssignExpression(jsonObject) {
-    let curr_model = new StructureModel(jsonObject.loc.start.line, getDetails[jsonObject.type], getDetails(jsonObject.left),'',  getDetails(jsonObject.right) );
+    let curr_model = new StructureModel(jsonObject.loc.start.line, 'assignment expression', getDetails(jsonObject.left),'',  getDetails(jsonObject.right) );
     listOfModels.push(curr_model);
 }
 function parseExpStatement(jsonObject) {
