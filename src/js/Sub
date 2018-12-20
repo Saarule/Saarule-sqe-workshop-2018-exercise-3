@@ -1,0 +1,275 @@
+import {parseCode} from './code-analyzer';
+import * as esprimaTool from 'esprima';
+import * as escodegenTool from 'escodegen';
+
+
+let dictionaryFunc = {
+    'IfStatement': substitute_if_stmt ,
+    'WhileStatement': substitute_while_stmt,
+    'VariableDeclaration': substitute_variable_declaration ,
+    'BlockStatement': substitute_block_stmt ,
+    'MemberExpression': substitute_member_exp ,
+    'ReturnStatement': substitute_return_stmt,
+    'VariableDeclarator': substitute_variable_declarator ,
+    'Program': substitute_program,
+    'Identifier': substitute_identifier,
+    'BinaryExpression': substitute_binary_exp,
+    'UpdateExpression': substitute_update_exp,
+    'FunctionDeclaration': substitute_func_decl ,
+    'ExpressionStatement': substitute_exp_stmt ,
+    'AssignmentExpression': substitute_assign_exp ,
+};
+
+let listOfRowsToIgnore = [];
+let greenLines = [];
+let redLines = [];
+let insideTheFunc = false;
+let evaluateIfStatements = false;
+let listOfOperators = ['+','-','*','/'];
+let listOfParams = [];
+
+function substitute_func_decl(jsonObject, env, args) {
+    for (let i = 0; i < jsonObject.params.length; i++) {
+        listOfParams.push(jsonObject.params[i].name);
+    }
+
+    let bodyEnv = createFuncBodyEnv(env, args);
+    insideTheFunc = true;
+    jsonObject.body = sub(jsonObject.body, bodyEnv, args);
+    insideTheFunc = false;
+    return jsonObject;
+}
+function substitute_variable_declaration(jsonObject, env, args) {
+    for (let i = 0; i < jsonObject.declarations.length; i++) {
+        if(insideTheFunc) listOfRowsToIgnore.push(jsonObject.declarations[i].loc.start.line - 1);
+        jsonObject.declarations[i] = sub(jsonObject.declarations[i], env, args);
+    }
+    return jsonObject;
+}
+
+function substitute_program(jsonObject, env, args) {
+    for (let i = 0; i < jsonObject.body.length; i++) {
+        jsonObject.body[i] = sub(jsonObject.body[i], env, args);
+    }
+    return jsonObject;
+}
+
+function substitute_exp_stmt(jsonObject, env, args) {
+    jsonObject.expression = sub(jsonObject.expression, env, args);
+    return jsonObject;
+}
+function substitute_block_stmt(jsonObject, env, args) {
+    for (let i = 0; i < jsonObject.body.length; i++) {
+        jsonObject.body[i] = sub(jsonObject.body[i], env, args);
+    }
+    return jsonObject;
+}
+
+function sub(jsonObject, env, args) {
+    try {
+        if (jsonObject.type === 'Literal')
+            return sub_literal(jsonObject);
+
+        return dictionaryFunc[jsonObject.type](jsonObject, env, args);
+    }
+    catch (e) {
+        return jsonObject;
+    }
+}
+
+function wrapperUpdateLineColors(ifStatementObject, env, args) {
+    let cloneJsonObj = esprimaTool.parseScript(escodegenTool.generate(ifStatementObject.test), {loc: true});
+    let evaluatedTest = sub(cloneJsonObj.body[0].expression,deepCopyDict(env), args);
+    if(evaluatedTest.type === 'BinaryExpression'){
+        if (evaluatedTest.left.type === 'Literal' && evaluatedTest.right.type === 'Literal') {
+            let value = eval(evaluatedTest.left.raw + evaluatedTest.operator + evaluatedTest.right.raw);
+            evaluatedTest = {'type': 'Literal', 'value': value, 'raw': '' + value, 'loc': evaluatedTest.loc};
+        }
+    }
+    if (evaluatedTest.type === 'Literal') {
+        updateLineColors(evaluatedTest, ifStatementObject);
+    }
+}
+function substitute_while_stmt(jsonObject, env, args) {
+    jsonObject.test = sub(jsonObject.test, env, args);
+    jsonObject.body = sub(jsonObject.body, deepCopyDict(env), args);
+    return jsonObject;
+}
+function substitute_variable_declarator(jsonObject, env, args) {
+    if(jsonObject.init != null){
+        jsonObject.init = sub(jsonObject.init, env, args);
+        if(jsonObject.init.type === 'ArrayExpression'){
+            for(let i = 0; i < jsonObject.init.elements.length; i++){
+                env[jsonObject.id.name+'['+i+']'] = jsonObject.init.elements[i];
+            }
+            return jsonObject;
+        }
+    }
+    env[jsonObject.id.name] = jsonObject.init;
+    return jsonObject;
+}
+
+function sub_literal(jsonObject) {
+    return jsonObject;
+}
+function substitute_return_stmt(jsonObject, env, args) {
+    jsonObject.argument = sub(jsonObject.argument, env, args);
+    return jsonObject;
+}
+function substitute_identifier(jsonObject, env, args) {
+    let ans = jsonObject;
+    if (jsonObject.name in env) {
+        if ((!listOfParams.includes(jsonObject.name)) || (listOfParams.includes(jsonObject.name) && listOfParams.length === args.length))
+            ans = env[jsonObject.name];
+    }
+    return ans;
+}
+function substitute_binary_exp(jsonObject, env, args) {
+    jsonObject.right = sub(jsonObject.right, env, args);
+    jsonObject.left = sub(jsonObject.left, env, args);
+    if(listOfOperators.includes(jsonObject.operator)) {
+        if (jsonObject.left.type === 'Literal' && jsonObject.right.type === 'Literal') {
+            let value = eval(jsonObject.left.raw + jsonObject.operator + jsonObject.right.raw);
+            return {'type': 'Literal', 'value': value, 'raw': '' + value, 'loc': jsonObject.loc};
+        }
+    }
+    return jsonObject;
+}
+
+function getListParsedArgs(args) {
+    if(args === ''){
+        return [];
+    }
+    let parsedArgs = parseCode(args);
+    parsedArgs = parsedArgs.body[0].expression;
+    if(parsedArgs.expressions !== undefined){
+        return parsedArgs.expressions;
+    }
+    return [parsedArgs];
+
+}
+
+
+function deepCopyDict(dict) {
+    let newDict = {};
+    for(let key in dict){
+        newDict[key] = dict[key];
+    }
+    return newDict;
+}
+
+function initializeEmptyArgs(envWithArguments) {
+    for (let i = 0; i < listOfParams.length; i++) {
+        envWithArguments[listOfParams[i]] = parseCode(listOfParams[i]).body[0].expression;
+    }
+}
+
+function initializeArgs(envWithArguments, args) {
+    for (let i = 0; i < args.length; i++) {
+        if (args[i].type === 'ArrayExpression') {
+            for (let itemIndex = 0; itemIndex < args[i].elements.length; itemIndex++) {
+                envWithArguments[listOfParams[i] + '[' + itemIndex + ']'] = args[i].elements[itemIndex];
+            }
+        } else {
+            envWithArguments[listOfParams[i]] = args[i];
+        }
+    }
+}
+
+function createFuncBodyEnv(env, args) {
+    if(listOfParams.length === 0)
+        return env;
+
+    let envWithArguments = deepCopyDict(env);
+    if(args.length > 0){
+        initializeArgs(envWithArguments, args);
+    }
+    else{
+        initializeEmptyArgs(envWithArguments);
+    }
+    return envWithArguments;
+}
+function updateLineColors(evaluatedTest, ifStatementObject) {
+    if (evaluatedTest.value) greenLines.push(ifStatementObject.test.loc.start.line-1);
+    else redLines.push(ifStatementObject.test.loc.start.line-1);
+    if (ifStatementObject.alternate != null) {
+        if (evaluatedTest.value) redLines.push(ifStatementObject.alternate.loc.start.line-1);
+        else greenLines.push(ifStatementObject.alternate.loc.start.line-1);
+    }
+}
+
+function substitute_member_exp(jsonObject, env, args) {
+    jsonObject.property = sub(jsonObject.property, env, args);
+    let key = '';
+    if(jsonObject.property.type === 'Literal'){
+        key = jsonObject.object.name+'['+jsonObject.property.raw+']';
+    }
+    if(key in env){
+        if(listOfParams.includes(jsonObject.object.name)) {
+            if (listOfParams.length === args.length) {
+                return env[key];
+            }
+        }
+        else{
+            return env[key];
+        }
+
+
+    }
+    return jsonObject;
+}
+function substitute_update_exp(jsonObject, env, args) {
+    jsonObject.argument = sub(jsonObject.argument, env, args);
+    return jsonObject;
+}
+function createEnvKey(jsonObject, leftName, env, args) {
+    let envKey = leftName;
+    if (jsonObject.left.type === 'MemberExpression'){
+        let itemIndex = '';
+        let itemIndexJsonObj = sub(jsonObject.left.property, env, args);
+        if(itemIndexJsonObj.type === 'Literal'){
+            itemIndex = itemIndexJsonObj.raw;
+        }
+        envKey = jsonObject.left.object.name+'['+itemIndex+']';
+    }
+    return envKey;
+}
+function substitute_assign_exp(jsonObject, env, args) {
+    let leftName = '';
+    if (jsonObject.left.type === 'MemberExpression'){leftName = jsonObject.left.object.name;}
+    else{leftName = jsonObject.left.name;}
+    if (insideTheFunc && !(listOfParams.includes(leftName))) listOfRowsToIgnore.push(jsonObject.loc.start.line - 1);
+    jsonObject.right = sub(jsonObject.right, env, args);
+    let envKey = createEnvKey(jsonObject, leftName, env, args);
+    env[envKey] = jsonObject.right;
+
+    return jsonObject;
+}
+
+
+function substitute_if_stmt(jsonObject, env, args) {
+    jsonObject.test = sub(jsonObject.test, env, args);
+    if(evaluateIfStatements){
+        wrapperUpdateLineColors(jsonObject, env, args);
+    }
+    jsonObject.consequent = sub(jsonObject.consequent, deepCopyDict(env), args);
+    if(jsonObject.alternate != null) {
+        jsonObject.alternate = sub(jsonObject.alternate, deepCopyDict(env), args);
+    }
+    return jsonObject;
+}
+
+
+const subedCode = (jsonObject, env, args, _evaluateIfStatements) => {
+    insideTheFunc = false;
+    listOfParams = [];
+    listOfRowsToIgnore = [];
+    evaluateIfStatements = _evaluateIfStatements;
+    redLines = [];
+    greenLines = [];
+    let updatedJsonObj = sub(jsonObject, env, getListParsedArgs(args));
+    return {'newJson': updatedJsonObj , 'greenLines': greenLines,'redLines':redLines, 'listRowsToIgnore': listOfRowsToIgnore};
+};
+
+
+export {subedCode};

@@ -4,21 +4,21 @@ import {StructureModel} from '../src/js/StructureModel';
 
 describe('Expressions',() => {
     it('AssignmentExpression with MemberExpression', () => {
-        assert.deepEqual(codeViewer(JSON.stringify(parseCode('y = arr[y];'))),
-            [new StructureModel(1,'assignment expression','y','','arr[y]'),]);});
+        assert.deepEqual(codeViewer(JSON.stringify(parseCode('z = arr[z];'))),
+            [new StructureModel(1,'assignment expression','z','','arr[z]'),]);});
     it('ExpressionStatement', () => {
         assert.deepEqual(codeViewer(JSON.stringify(parseCode('let low;\n\n\nlow = 0;'))),
             [new StructureModel(1,'variable declarator','low','',null),
                 new StructureModel(4,'assignment expression','low','',0)]);});
     it('ForStatement with UpdateExpression(prefix = false)', () => {
-        assert.deepEqual(codeViewer(JSON.stringify(parseCode('for(var i = 0; i < 5; i = i++)\n{x = x + 1;}'))),
+        assert.deepEqual(codeViewer(JSON.stringify(parseCode('for(var i = 0; i < 5; i = i++)\n{y = y + 1;}'))),
             [new StructureModel(1,'for statement','','i < 5',''), new StructureModel(1,'variable declarator','i','',0), new StructureModel(1,'assignment expression','i','','i++'), new StructureModel(2,'assignment expression','x','','x + 1'),]);});
     it('ForStatement with UpdateExpression(prefix = true)', () => {
-        assert.deepEqual(codeViewer(JSON.stringify(parseCode('for(var i = 0; i < 5; i = ++i)\n{x = x + 1;}'))),
+        assert.deepEqual(codeViewer(JSON.stringify(parseCode('for(var i = 0; i < 5; i = ++i)\n{z = z + 1;}'))),
             [new StructureModel(1,'for statement','','i < 5',''),
                 new StructureModel(1,'variable declarator','i','',0),
                 new StructureModel(1,'assignment expression','i','','++i'),
-                new StructureModel(2,'assignment expression','x','','x + 1'),]);});
+                new StructureModel(2,'assignment expression','z','','z + 1'),]);});
 });
 describe('Statements',() => {
     it(': IfStatement followed by else ', () => {
@@ -41,7 +41,7 @@ describe('Statements',() => {
             [new StructureModel(1,'for statement','','i < 5',''),
                 new StructureModel(1,'variable declarator','i','',0),
                 new StructureModel(1,'assignment expression','i','','i++'),
-                new StructureModel(2,'assignment expression','x','','x + 1'),]);});
+                new StructureModel(2,'assignment expression','z','','z + 1'),]);});
     it(': WhileStatement ', () => {
         assert.deepEqual(codeViewer(JSON.stringify(parseCode('while(i < 10)\n{i = n-1}'))),
             [new StructureModel(1,'while statement','','i < 10',''),
@@ -59,12 +59,12 @@ describe('Model',() => {
 });
 describe('Declarations',() => {
     it(':FunctionDeclaration', () => {
-        assert.deepEqual(codeViewer(JSON.stringify(parseCode('function b(x){}'))),
-            [new StructureModel(1, 'function declaration', 'b', '', ''),
-                new StructureModel(1, 'variable declaration', 'x', '', '')]);});
+        assert.deepEqual(codeViewer(JSON.stringify(parseCode('function f(y){}'))),
+            [new StructureModel(1, 'function declaration', 'f', '', ''),
+                new StructureModel(1, 'variable declaration', 'y', '', '')]);});
     it(': variableDeclarator ', () => {
-        assert.deepEqual(codeViewer(JSON.stringify(parseCode('let a = 1;'))),
-            [new StructureModel(1, 'variable declarator', 'a', '', 1)]);});
+        assert.deepEqual(codeViewer(JSON.stringify(parseCode('let b = 1;'))),
+            [new StructureModel(1, 'variable declarator', 'b', '', 1)]);});
 });
 
 

@@ -1,0 +1,22 @@
+import * as escodegenTool from 'escodegen';
+
+const codeViewer = (substituteParsedCodeResult, greenLines, redLines , listRowsToIgnore) => {
+    let answer = [];
+    let escodegenTextValue = escodegenTool.generate(substituteParsedCodeResult);
+    escodegenTextValue = escodegenTextValue.replace(/\[[\r\n]+/g,'[');
+    escodegenTextValue = escodegenTextValue.replace(/,[\r\n]+/g,',');
+    escodegenTextValue = escodegenTextValue.replace('\n    ];','];');
+    escodegenTextValue = escodegenTextValue.replace('\n];','];');
+    let lines = escodegenTextValue.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+        if (!listRowsToIgnore.includes(i)) {
+            let rowChosenColor = 'black';
+            if (redLines.includes(i)) rowChosenColor = 'red';
+            if (greenLines.includes(i)) rowChosenColor = 'green';
+            answer.push({'line':lines[i], 'color':rowChosenColor});
+        }
+    }
+    return answer;
+};
+
+export {codeViewer};

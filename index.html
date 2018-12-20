@@ -17,51 +17,74 @@
             height: 95%;
         }
     </style>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
 </head>
 <body>
 <table>
     <tr>
         <td>
             <div>
-                <label>Enter code here</label>
+                <label>Origin code</label>
             </div>
         </td>
         <td>
             <div>
-                <label>Parsed code here</label>
+                <label>Origin Parsed code</label>
             </div>
         </td>
         <td>
             <div>
-                <label>Table code here</label>
+                <label>After Substitution code</label>
+            </div>
+        </td>
+        <td>
+            <div>
+                <label>After Substitution Parsed code</label>
             </div>
         </td>
     </tr>
     <tr>
         <td>
             <div class="textAreaWrapper">
-                <textarea id="codePlaceholder" title="Enter code here">
+                <textarea id="originCodeInput" title="Enter code here"></textarea>
+            </div>
+        </td>
+        <td>
+            <div class="textAreaWrapper">
+                <textarea id="originParsedCodeResult">
                 </textarea>
             </div>
         </td>
         <td>
-            <div class="textAreaWrapper">
-                <textarea id="parsedCode" title="Parse code"></textarea>
+            <div id="substituteCodeResult">
             </div>
         </td>
         <td>
-            <div id ="parsedView">
+            <div class="textAreaWrapper">
+                <textarea id="substituteParsedCodeResult">
+                </textarea>
             </div>
         </td>
     </tr>
     <tr>
         <td>
             <div>
-                <button id="codeSubmissionButton">Parse code</button>
+                <textarea id="funcArgsInput" title="Enter arguments here"></textarea>
             </div>
         </td>
+        <td></td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
         <td>
+            <div>
+                <button id="codeSubmissionButton">Substitution code</button>
+            </div>
         </td>
+        <td></td>
+        <td></td>
+        <td></td>
     </tr>
 </table>
 
