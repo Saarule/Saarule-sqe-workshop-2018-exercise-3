@@ -1,4 +1,4 @@
-import {parseCode} from './code-analyzer';
+import {parseCode} from './codeAnalyzer';
 import * as esprimaTool from 'esprima';
 import * as escodegenTool from 'escodegen';
 

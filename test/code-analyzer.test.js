@@ -1,5 +1,5 @@
 var assert = require('chai').assert;
-import {parseCode,codeViewer} from '../src/js/code-analyzer';
+import {parseCode,codeViewer} from '../src/js/codeAnalyzer';
 import {StructureModel} from '../src/js/StructureModel';
 
 describe('Expressions',() => {

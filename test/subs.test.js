@@ -1,7 +1,7 @@
 import * as assert from 'assert';
 import {subedCode} from '../src/js/Sub';
-import {parseCode} from '../src/js/code-analyzer';
-import {codeViewer} from '../src/js/code-viewer';
+import {parseCode} from '../src/js/codeAnalyzer';
+import {codeViewer} from '../src/js/codeViewer';
 
 describe('Substitute for function with args type: number', () => {
     it('without if condition', () => {
