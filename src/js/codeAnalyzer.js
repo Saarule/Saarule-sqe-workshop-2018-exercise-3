@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import * as esprima from 'esprima';
 
 const parseCode = (codeToParse) => {
