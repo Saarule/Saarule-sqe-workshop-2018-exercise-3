@@ -1,1 +1,1 @@
-import './subs.test';
+import './graphGenerator.test';
